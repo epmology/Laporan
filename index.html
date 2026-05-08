@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ICU Report System - RSUD Kol. Abundjani Bangko</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .form-card { @apply bg-white rounded-xl shadow-sm border border-gray-200 p-6; }
+        
+        /* Judul Section Utama: Paling Tebal (Font Weight 900) */
+        .section-title { @apply font-black text-sm uppercase tracking-widest mb-5 border-b pb-2; }
+        
+        /* Label Input: Bobot Standar untuk Kejelasan Klinis */
+        .input-label { @apply block text-xs font-bold mb-2.5 uppercase opacity-90 tracking-wide; }
+        
+        .input-ctrl { 
+            @apply w-full p-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition-all text-sm !text-black font-semibold;
+            color: #000000 !important;
+        }
+        
+        .gcs-input { 
+            @apply w-full p-2.5 bg-white border border-gray-300 rounded-lg text-center font-bold !text-black focus:ring-2 focus:ring-blue-500 outline-none appearance-none;
+            color: #000000 !important;
+        }
+
+        select option {
+            color: #000000 !important;
+            background-color: #ffffff !important;
+        }
+        
+        .modal-overlay { @apply fixed inset-0 bg-black/60 backdrop-blur-sm m-0 z-[60] flex items-center justify-center p-4 transition-opacity duration-300; }
+        .modal-content { @apply bg-white w-full max-w-xl rounded-2xl shadow-2xl overflow-hidden transform transition-all duration-300 scale-95 opacity-0; }
+        .modal-active .modal-content { @apply scale-100 opacity-100; }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen text-gray-800">
+
+    <div class="max-w-2xl mx-auto px-4 py-6 pb-32">
+        <div class="flex items-start justify-between mb-8">
+            <div class="flex flex-col">
+                <h1 class="text-xl font-black text-slate-900 leading-[1.1]">
+                    Intensive Care Unit<br>
+                    <span class="text-blue-600">Report System</span>
+                </h1>
+                <p class="text-[10px] text-blue-800 font-bold tracking-[0.15em] uppercase mt-2">
+                    RSUD Kol. Abundjani Bangko
+                </p>
+            </div>
+            <button onclick="resetForm()" class="text-[10px] font-bold text-red-500 hover:bg-red-50 px-2 py-1 rounded border border-red-200 transition-colors uppercase">
+                Reset Data
+            </button>
+        </div>
+
+        <!-- Section: Identitas Petugas (Biru) -->
+        <div class="form-card bg-blue-600 border-none mb-6 shadow-lg text-white">
+            <div class="section-title text-blue-100 border-blue-400/50">Identitas Petugas Pelapor</div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="flex flex-col">
+                    <label class="input-label text-blue-50">Nama Petugas</label>
+                    <input type="text" id="nama_petugas" class="input-ctrl" placeholder="Nama Lengkap...">
+                </div>
+                <div class="flex flex-col">
+                    <label class="input-label text-blue-50">Shift Kerja</label>
+                    <select id="shift" class="input-ctrl appearance-none">
+                        <option value="Pagi">Shift Pagi</option>
+                        <option value="Siang">Shift Siang</option>
+                        <option value="Malam">Shift Malam</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section: Identitas Pasien (Teal) -->
+        <div class="form-card bg-teal-700 border-none mb-8 shadow-lg text-white">
+            <div class="section-title text-teal-100 border-teal-600/50">Data Identitas Pasien</div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div class="flex flex-col"><label class="input-label text-teal-50">Nama Pasien</label><input type="text" id="nama" class="input-ctrl" placeholder="Tn./Ny./An. ..."></div>
+                <div class="flex flex-col"><label class="input-label text-teal-50">Nomor MR</label><input type="text" id="mr" class="input-ctrl" placeholder="00.00.00" maxlength="8" oninput="this.value = autoFormatMR(this.value)"></div>
+                <div class="flex flex-col"><label class="input-label text-teal-50">Jaminan</label><select id="jaminan" class="input-ctrl"><option value="BPJS">BPJS</option><option value="UMUM">UMUM</option></select></div>
+                <div class="flex flex-col">
+                    <label class="input-label text-teal-50">Bed</label>
+                    <select id="bed" class="input-ctrl">
+                        <option value="3">Bed 3</option>
+                        <option value="6">Bed 6</option>
+                        <option value="Kaca">Bed Kaca</option>
+                    </select>
+                </div>
+            </div>
+            <div class="flex flex-col"><label class="input-label text-teal-50">Diagnosa Medis</label><input type="text" id="diagnosa" class="input-ctrl" placeholder="..."></div>
+        </div>
+
+        <div class="space-y-6">
+            <!-- Section: Status Klinis (Oranye) -->
+            <div class="form-card bg-orange-600 border-none shadow-lg text-white">
+                <div class="section-title text-orange-100 border-orange-500/50">Status Klinis & Observasi</div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div class="flex flex-col">
+                        <label class="input-label text-orange-50">Keadaan Umum</label>
+                        <select id="ku" class="input-ctrl appearance-none">
+                            <option value="Stabil">Stabil</option>
+                            <option value="Lemah">Lemah</option>
+                            <option value="Berat">Berat</option>
+                        </select>
+                    </div>
+                    <div class="flex flex-col">
+                        <label class="input-label text-orange-50">Tingkat Kesadaran</label>
+                        <select id="kesadaran" class="input-ctrl appearance-none">
+                            <option value="Compos Mentis">Compos Mentis</option>
+                            <option value="Somnolen">Somnolen</option>
+                            <option value="Sopor">Sopor</option>
+                            <option value="Coma">Coma</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- GCS Dropdown Grid -->
+                <div class="bg-black/10 p-5 rounded-xl border border-dashed border-white/20 mb-6 text-center">
+                    <label class="input-label mb-4 text-white">GCS (Glasgow Coma Scale)</label>
+                    <div class="grid grid-cols-3 gap-4">
+                        <div class="flex flex-col">
+                            <span class="text-[10px] text-orange-100 font-bold uppercase mb-2 block text-center">E</span>
+                            <select id="gcs_e" class="gcs-input">
+                                <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4" selected>4</option>
+                            </select>
+                        </div>
+                        <div class="flex flex-col">
+                            <span class="text-[10px] text-orange-100 font-bold uppercase mb-2 block text-center">M</span>
+                            <select id="gcs_m" class="gcs-input">
+                                <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6" selected>6</option>
+                            </select>
+                        </div>
+                        <div class="flex flex-col">
+                            <span class="text-[10px] text-orange-100 font-bold uppercase mb-2 block text-center">V</span>
+                            <select id="gcs_v" class="gcs-input">
+                                <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5" selected>5</option>
+                                <option value="Afasia">Afasia</option><option value="Terintubasi">Terintubasi</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="flex flex-col">
+                        <label class="input-label text-orange-50">Pupil</label>
+                        <select id="pupil" class="input-ctrl appearance-none">
+                            <option value="Isokor">Isokor</option>
+                            <option value="Anisokor">Anisokor</option>
+                        </select>
+                    </div>
+                    <div class="flex flex-col">
+                        <label class="input-label text-orange-50">Ukuran Pupil (mm)</label>
+                        <input type="text" id="pupil_size" class="input-ctrl" placeholder="Contoh: 3/3">
+                    </div>
+                    <div class="flex flex-col">
+                        <label class="input-label text-orange-50">Reflek Cahaya</label>
+                        <input type="text" id="reflek" class="input-ctrl" placeholder="+ / +">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section: On Therapy (Oranye) -->
+            <div class="form-card bg-orange-600 border-none shadow-lg text-white">
+                <div class="section-title text-orange-100 border-orange-500/50">On Therapy</div>
+                <div class="mb-8 flex flex-col">
+                    <label class="input-label text-orange-50 mb-2">Infus Pump (3 List)</label>
+                    <div class="space-y-3">
+                        <input type="text" class="infus-input input-ctrl" placeholder="Cairan Infus 1">
+                        <input type="text" class="infus-input input-ctrl" placeholder="Cairan Infus 2">
+                        <input type="text" class="infus-input input-ctrl" placeholder="Cairan Infus 3">
+                    </div>
+                </div>
+                <div class="flex flex-col">
+                    <label class="input-label text-orange-50 mb-2">Syringe Pump (6 List)</label>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <input type="text" class="syringe-input input-ctrl" placeholder="Terapi 1">
+                        <input type="text" class="syringe-input input-ctrl" placeholder="Terapi 2">
+                        <input type="text" class="syringe-input input-ctrl" placeholder="Terapi 3">
+                        <input type="text" class="syringe-input input-ctrl" placeholder="Terapi 4">
+                        <input type="text" class="syringe-input input-ctrl" placeholder="Terapi 5">
+                        <input type="text" class="syringe-input input-ctrl" placeholder="Terapi 6">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section: Output (Oranye) -->
+            <div class="form-card bg-orange-600 border-none shadow-lg text-white">
+                <div class="section-title text-orange-100 border-orange-500/50">Cairan & Catatan</div>
+                
+                <!-- Input Jumlah Jam Baru -->
+                <div class="mb-6 p-4 bg-black/10 rounded-xl border border-white/20">
+                    <label class="input-label text-white">Jumlah Jam (Berlaku untuk semua output)</label>
+                    <input type="text" id="jam_global" class="input-ctrl text-center text-lg" placeholder="Cukup isi Angka saja, misalnya; 7">
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div class="flex flex-col">
+                        <label class="input-label text-orange-50">Urine (cc)</label>
+                        <input type="text" id="urine" class="input-ctrl" placeholder="Cukup isi Angka saja, misalnya; 210">
+                    </div>
+                    <div class="flex flex-col">
+                        <label class="input-label text-orange-50">Balance Cairan (cc)</label>
+                        <input type="text" id="balance" class="input-ctrl" placeholder="Cukup isi Angka saja, misalnya; -100">
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="flex flex-col">
+                        <label class="input-label text-orange-50">Residu NGT (cc)</label>
+                        <input type="text" id="residu_ngt" class="input-ctrl" placeholder="Cukup isi Angka saja, misalnya; 20">
+                    </div>
+                    <div class="flex flex-col">
+                        <label class="input-label text-orange-50">Drain (cc)</label>
+                        <input type="text" id="drain" class="input-ctrl" placeholder="Cukup isi Angka saja, misalnya; 50">
+                    </div>
+                </div>
+                <div class="mt-6 flex flex-col">
+                    <label class="input-label text-orange-50">Catatan Tambahan</label>
+                    <textarea id="catatan" rows="3" class="input-ctrl" placeholder="Instruksi tambahan..."></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Floating Footer -->
+        <div class="fixed bottom-0 left-0 right-0 p-4 bg-white/90 backdrop-blur-lg border-t border-gray-200 shadow-xl z-40">
+            <div class="max-w-2xl mx-auto flex gap-3">
+                <button onclick="togglePreview(true)" class="bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-lg active:scale-95 uppercase text-xs tracking-widest text-nowrap">Cek</button>
+                <button onclick="copyToClipboard()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-all shadow-lg active:scale-95 uppercase text-xs tracking-widest text-nowrap">Salin Laporan</button>
+            </div>
+        </div>
+
+        <!-- Preview Modal -->
+        <div id="previewModal" class="modal-overlay hidden opacity-0">
+            <div class="modal-content">
+                <div class="bg-slate-900 p-4 flex justify-between items-center text-white">
+                    <h3 class="font-bold text-xs uppercase tracking-widest flex items-center gap-2">Preview Laporan</h3>
+                    <button onclick="togglePreview(false)" class="text-slate-400 hover:text-white"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>
+                </div>
+                <div class="p-6 bg-white overflow-y-auto max-h-[60vh]"><div id="modalOutput" class="whitespace-pre-wrap text-sm text-slate-700 font-mono leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-200 text-wrap"></div></div>
+                <div class="p-4 bg-slate-50 border-t border-slate-200"><button onclick="copyToClipboard()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-all text-xs uppercase tracking-wider">Salin Sekarang</button></div>
+            </div>
+        </div>
+
+        <div id="toast" class="fixed top-10 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-full text-[10px] font-bold shadow-2xl opacity-0 transition-all pointer-events-none z-[100] uppercase tracking-widest">Berhasil Disalin!</div>
+    </div>
+
+    <script>
+        const inputIds = ['nama_petugas', 'shift', 'nama', 'mr', 'bed', 'jaminan', 'diagnosa', 'ku', 'kesadaran', 'pupil', 'pupil_size', 'reflek', 'urine', 'jam_global', 'balance', 'residu_ngt', 'drain', 'catatan'];
+
+        function formatGcsComponent(val) {
+            if (!val) return '-';
+            if (/^\d+$/.test(val)) {
+                const map = {'0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴', '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹'};
+                return String(val).split('').map(c => map[c] || c).join('');
+            }
+            return val;
+        }
+
+        function autoFormatMR(val) {
+            const digits = val.replace(/\D/g, ''); 
+            if (digits.length === 6) {
+                return digits.replace(/(\d{2})(\d{2})(\d{2})/, "$1.$2.$3");
+            }
+            return val;
+        }
+
+        function getReportText() {
+            const data = {};
+            inputIds.forEach(id => { 
+                const el = document.getElementById(id);
+                data[id] = el ? el.value.trim() : '-'; 
+            });
+
+            const gcsFormatted = `E${formatGcsComponent(document.getElementById('gcs_e').value)} M${formatGcsComponent(document.getElementById('gcs_m').value)} V${formatGcsComponent(document.getElementById('gcs_v').value)}`;
+
+            const infusPumps = Array.from(document.querySelectorAll('.infus-input')).map(i => i.value.trim()).filter(v => v !== "");
+            let infusFormatted = infusPumps.length > 0 ? infusPumps.map(s => `   ( ● ) ${s}`).join('\n') : "   -";
+
+            const syringePumps = Array.from(document.querySelectorAll('.syringe-input')).map(i => i.value.trim()).filter(v => v !== "");
+            let syringeFormatted = syringePumps.length > 0 ? syringePumps.map(s => `   ( ● ) ${s}`).join('\n') : "   -";
+
+            // Global Hour Logic
+            const hr = data.jam_global && data.jam_global !== '-' ? ` / ${data.jam_global} jam` : "";
+
+            const residuVal = document.getElementById('residu_ngt').value.trim();
+            const residuLine = residuVal ? `• Residu NGT: ${residuVal} cc${hr}\n` : "";
+            
+            const drainVal = document.getElementById('drain').value.trim();
+            const drainLine = drainVal ? `• Drain: ${drainVal} cc${hr}\n` : "";
+
+            const catatanVal = document.getElementById('catatan').value.trim();
+            const catatanSection = catatanVal ? `\n*CATATAN TAMBAHAN:*\n${catatanVal}\n` : "";
+
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+            const dateStr = now.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+
+            return `*LAPORAN PASIEN | _Shift ${data.shift}_*\n📅 ${dateStr} | ⏰ ${timeStr} WIB\n\n*IDENTITAS PASIEN*\n• Nama: ${data.nama}\n• No. MR: ${autoFormatMR(data.mr)}\n• Bed: ${data.bed}\n• Jaminan: ${data.jaminan}\n• Diagnosa: ${data.diagnosa}\n\n*KEADAAN KLINIS*\n• KU: ${data.ku}\n• Kesadaran: ${data.kesadaran}\n• GCS: ${gcsFormatted}\n• Pupil: ${data.pupil} (${data.pupil_size} mm)\n• Reflek Cahaya: ${data.reflek}\n\n*ON THERAPY*\n• Infus Pump:\n${infusFormatted}\n• Syringe Pump:\n${syringeFormatted}\n\n*BALANCE & OUTPUT*\n• Urine: ${data.urine} cc${hr}\n• Balance Cairan: ${data.balance} cc${hr}\n${residuLine}${drainLine}${catatanSection}\n> _Laporan dibuat oleh: ${data.nama_petugas}_`;
+        }
+
+        function togglePreview(show) {
+            const modal = document.getElementById('previewModal');
+            if (show) {
+                document.getElementById('modalOutput').innerText = getReportText();
+                modal.classList.remove('hidden');
+                setTimeout(() => { modal.classList.add('modal-active'); modal.classList.remove('opacity-0'); }, 10);
+            } else {
+                modal.classList.remove('modal-active'); modal.classList.add('opacity-0');
+                setTimeout(() => { modal.classList.add('hidden'); }, 300);
+            }
+        }
+
+        function copyToClipboard() {
+            const text = getReportText();
+            const textarea = document.createElement("textarea");
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            try { 
+                document.execCommand('copy'); 
+                showToast("Berhasil Disalin!"); 
+                togglePreview(false); 
+            } catch (err) {}
+            document.body.removeChild(textarea);
+        }
+
+        function resetForm() {
+            if(confirm("Hapus semua data input?")) {
+                location.reload();
+            }
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.innerText = msg; toast.classList.remove('opacity-0', 'top-10'); toast.classList.add('opacity-100', 'top-14');
+            setTimeout(() => { toast.classList.add('opacity-0', 'top-10'); toast.classList.remove('opacity-100', 'top-14'); }, 2000);
+        }
+    </script>
+</body>
+</html>
